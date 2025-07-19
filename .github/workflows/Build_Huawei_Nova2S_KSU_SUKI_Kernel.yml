@@ -1,0 +1,83 @@
+﻿name: Build_Huawei_Nova2S_KSU_SUKI_Kernel
+on:
+  workflow_dispatch:
+  schedule:
+      # Run once at 12:00 on Saturday.. See http://crontab.guru
+      - cron: '00 12 * * 6'
+  push:
+    branches:
+      - HEAD
+  pull_request:
+      branches:
+      - HEAD
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_MAXSIZE: "2G"
+      CCACHE_HARDLINK: "true"
+      KERNEL_CMDLINE: "ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- O=out"
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+        fetch-depth: 100
+
+    - name: Set up ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -y 
+        sudo apt install binutils make python2 libssl-dev flex unzip libssl-dev ca-certificates xz-utils mkbootimg cpio device-tree-compiler git git-lfs bc bison build-essential ccache curl flex g++-9 gcc-9 git git-lfs gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev adb fastboot -y
+        git clone https://github.com/Coconutat/ToolChains.git --dept=1 -b linaro_gcc_4.9
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 100
+    
+    - name: Get Time
+      id: get_time
+      run: |
+        echo "TIME=$(TZ=UTC-8 date +%m%d%H%M )" >> $GITHUB_OUTPUT
+        
+    - name: Build Nova2S KSU_SUKI_S_KPM Kernel
+      run: |
+        if [ -d include/config ];
+         then
+          echo "Find config,will remove it"
+          rm -rf include/config
+        else
+          echo "No Config,good."
+        fi
+
+        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-1.5.7
+        export PATH=$(pwd)/ToolChains/bin/:$PATH
+        export ARCH=arm64
+        export SUBARCH=arm64
+        sudo ln -sf /usr/bin/python2.7 /usr/bin/python
+        sudo chmod -R 777 $(pwd)/
+        make $KERNEL_CMDLINE merge_hi3660_defconfig
+        make $KERNEL_CMDLINE -j$(nproc --all)
+        echo "🛠️ 正在修补 Image 文件..."
+        mkdir -p $(pwd)/kernelpatch-a/
+        cp out/arch/arm64/boot/Image $(pwd)/kernelpatch-a/
+        cp out/arch/arm64/boot/dts/auto-generate/config/hi3660/*.dtb $(pwd)/kernelpatch-a/
+        cd kernelpatch-a/
+        wget https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.12.0/patch_linux
+        chmod 777 patch_linux
+        ./patch_linux
+        mv -f oImage Image
+        gzip -k Image Image.gz
+        cat Image.gz *.dtb > Image.gz-dtb
+        cd ..
+        tools/mkbootimg --kernel kernelpatch-a/Image.gz-dtb --base 0x0 --cmdline "loglevel=4 initcall_debug=n page_tracker=on slub_min_objects=16 unmovable_isolate1=2:192M,3:224M,4:256M printktimer=0xfff0a000,0x534,0x538 androidboot.selinux=enforcing buildvariant=user" --tags_offset 0x07A00000 --kernel_offset 0x00080000 --ramdisk_offset 0x07c00000 --header_version 1 --os_version 9 --os_patch_level 2020-09-05  --output Nova2S_KSU_SUKI_S_KPM_DTB-enforcing-${{ steps.get_time.outputs.TIME }}.img
+        tools/mkbootimg --kernel kernelpatch-a/Image.gz-dtb --base 0x0 --cmdline "loglevel=4 initcall_debug=n page_tracker=on slub_min_objects=16 unmovable_isolate1=2:192M,3:224M,4:256M printktimer=0xfff0a000,0x534,0x538 androidboot.selinux=permissive buildvariant=user" --tags_offset 0x07A00000 --kernel_offset 0x00080000 --ramdisk_offset 0x07c00000 --header_version 1 --os_version 9 --os_patch_level 2020-09-05  --output Nova2S_KSU_SUKI_S_KPM_DTB-permissive-${{ steps.get_time.outputs.TIME }}.img
+
+    - name: Upload Nova2S KSU_SUKI_S_KPM Kernel
+      uses: actions/upload-artifact@v4
+      with:
+        name: Nova2S_KSU_SUKI_S_KPM-kernel-${{ steps.get_time.outputs.TIME }}
+        path: "Nova2S_KSU_SUKI_S_KPM-*.img"
