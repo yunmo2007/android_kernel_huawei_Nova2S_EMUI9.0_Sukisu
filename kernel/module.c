@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright (C) 2002 Richard Henderson
    Copyright (C) 2001 Rusty Russell, 2002, 2010 Rusty Russell IBM.
 
@@ -48,7 +48,6 @@
 #include <linux/rculist.h>
 #include <asm/uaccess.h>
 #include <asm/cacheflush.h>
-#include <linux/set_memory.h>
 #include <asm/mmu_context.h>
 #include <linux/license.h>
 #include <asm/sections.h>

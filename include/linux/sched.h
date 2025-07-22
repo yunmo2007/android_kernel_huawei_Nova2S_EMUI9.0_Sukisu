@@ -2371,10 +2371,6 @@ struct task_struct {
 	struct reclaim_result *proc_reclaimed_result;
 #endif
 /* CPU-specific state of this task */
-#ifdef CONFIG_KSU_SUSFS
-	u64 susfs_task_state;
-	u64 susfs_last_fake_mnt_id;
-#endif
 	struct thread_struct thread;
 /*
  * WARNING: on x86, 'thread_struct' contains a variable-sized
@@ -4088,12 +4084,6 @@ void cpufreq_add_update_util_hook(int cpu, struct update_util_data *data,
 				    unsigned int flags));
 void cpufreq_remove_update_util_hook(int cpu);
 #endif /* CONFIG_CPU_FREQ */
-
-#ifdef CONFIG_DYNAMIC_STUNE_BOOST
-int do_stune_boost(char *st_name, int boost, int *slot);
-int do_stune_sched_boost(char *st_name, int *slot);
-int reset_stune_boost(char *st_name, int slot);
-#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 #ifdef CONFIG_SCHED_HWSTATUS
 extern void sched_hwstatus_iodelay_caller(struct task_struct *tsk, u64 delta);
