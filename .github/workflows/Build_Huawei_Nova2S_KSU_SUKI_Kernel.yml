@@ -50,7 +50,7 @@ jobs:
           echo "No Config,good."
         fi
 
-        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-1.5.7
+        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s nongki
         export PATH=$(pwd)/ToolChains/bin/:$PATH
         export ARCH=arm64
         export SUBARCH=arm64
