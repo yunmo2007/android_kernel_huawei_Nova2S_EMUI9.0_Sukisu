@@ -16,7 +16,7 @@ jobs:
       CCACHE_NOHASHDIR: "true"
       CCACHE_MAXSIZE: "2G"
       CCACHE_HARDLINK: "true"
-      KERNEL_CMDLINE: "ARCH=arm64 CROSS_COMPILE=$(pwd)/ToolChains/bin/aarch64-linux-gnu- O=out"
+      KERNEL_CMDLINE: "ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- O=out"
     steps:
     - name: Checkout
       uses: actions/checkout@v3
